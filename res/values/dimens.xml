@@ -4,9 +4,6 @@
   <dimen name="activity_horizontal_margin">16dp</dimen>
   <dimen name="activity_vertical_margin">16dp</dimen>
 
-  <dimen name="video_back_marginLeft">26dp</dimen>
-  <dimen name="video_back_marginTop">48dp</dimen>\
-
   <!-- VideoActivity视频播放器 720p -->
   <dimen name="video_back_marginLeft">26dp</dimen><!-- 视频播放器返回键左边距 -->
   <dimen name="video_back_marginTop">48dp</dimen><!-- 视频播放器返回键上边距 -->

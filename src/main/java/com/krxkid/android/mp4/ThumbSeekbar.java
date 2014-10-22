@@ -12,7 +12,7 @@ import android.widget.SeekBar;
 /**
  * 可控制thumb大小的seekbar
  * 
- * @author liudenghui
+ * @author
  * 
  */
 public class ThumbSeekbar extends SeekBar {

@@ -1,6 +1,5 @@
 package com.krxkid.android.mp4.player;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.*;
 import android.content.res.Configuration;
@@ -29,8 +28,9 @@ import com.goodow.realtime.core.Registration;
 import com.goodow.realtime.json.Json;
 import com.goodow.realtime.json.JsonObject;
 import com.google.inject.Inject;
-import com.krxkid.android.mp4.Constant;
 import com.krxkid.android.mp4.R;
+import com.krxkid.android.mp4.utils.Constant;
+import com.krxkid.android.mp4.utils.Registry;
 import roboguice.activity.RoboActivity;
 import roboguice.inject.ContentView;
 import roboguice.inject.InjectView;
@@ -46,6 +46,10 @@ import roboguice.inject.InjectView;
  */
 @ContentView(R.layout.video_activity_media)
 public class VideoActivity extends RoboActivity implements OnTouchListener {
+  private boolean registried = false;
+  @Inject
+  private Registry registry;
+
   private class SoundBroadCastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -56,11 +60,9 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
       } else {
         btn_media_controler_sound.setBackgroundResource(R.drawable.common_player_sound);
         btn_media_controler_sound.setClickable(true);
-        // btn_media_controler_sound.setOnClickListener(listener);
       }
     }
   }
-
 
   private boolean isOnline = false;// 是否在线播放
   private boolean isChangedVideo = false;// 是否改变视频
@@ -157,7 +159,8 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
           int videoHeight = videoView.getVideoHeight();
           videoView.layout(0, 0, videoWidth, videoHeight);
           setFit(0);
-          handleMsg(jsonObject);
+          if (jsonObject != null)
+            handleMsg(jsonObject);
           break;
       }
       super.handleMessage(msg);
@@ -180,11 +183,6 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
   }
 
   @Override
-  public void onBackPressed() {
-
-  }
-
-  @Override
   public void onConfigurationChanged(Configuration newConfig) {
     getScreenSize();// 获得屏幕尺寸大小
     if (isControllerShow) {
@@ -203,15 +201,18 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    this.subscribe();
     backImageView.setOnClickListener(new OnClickListener() {
       @Override
       public void onClick(View v) {
         // 返回键盘
+        finish();
       }
     });
     this.getScreenSize();// 获得屏幕尺寸大小
     soundBroadCastReceiver = new SoundBroadCastReceiver();
     this.controlView = getLayoutInflater().inflate(R.layout.video_media_controler, null);
+
     this.controlerWindow = new PopupWindow(this.controlView);
     this.tv_media_controler_duration =
         (TextView) this.controlView.findViewById(R.id.tv_media_controler_duration);
@@ -220,10 +221,14 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
     this.titleView = getLayoutInflater().inflate(R.layout.video_media_title, null);
     this.tv_media_title_name = (TextView) this.titleView.findViewById(R.id.tv_media_title_name);
     this.toolView = View.inflate(this, R.layout.video_media_toolbar, null);
+
     this.titleWindow = new PopupWindow(this.titleView, screenWidth, controlHeight);
     this.videoView = (VideoView) findViewById(R.id.krx_mp4_video_view);
+
     videoView.setOnTouchListener(this);
+
     this.toolWindow = new PopupWindow(this.toolView, 70, 170);
+
     iv_act_picture_pen = (ImageView) toolView.findViewById(R.id.iv_act_picture_pen);
     iv_act_picture_eraser = (ImageView) toolView.findViewById(R.id.iv_act_picture_eraser);
     this.ibtn_media_controler_play_pause =
@@ -342,7 +347,6 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
     this.videoView.setMySizeChangeLinstener(new VideoView.MySizeChangeLinstener() {
       @Override
       public void doMyThings() {
-        // setVideoScale(SCREEN_DEFAULT);// 设置视频显示尺寸
       }
     });
 
@@ -353,7 +357,6 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
         if (isControllerShow) {
           showController();
         }
-
         int i = videoView.getDuration();
         sb_media_controler_seekbar.setMax(i);
         i /= 1000;
@@ -446,14 +449,6 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
         }
     );
 
-    // this.btn_media_controler_brightness.setOnClickListener(new OnClickListener() {
-    // @Override
-    // public void onClick(View v) {
-    // getPopupBrightness();
-    // popupBrightness.showAtLocation(findViewById(R.id.vv), Gravity.CENTER, 0, 0);
-    // }
-    // });
-
     this.sb_media_controler_seekbar =
         (SeekBar) controlView.findViewById(R.id.sb_media_controler_seekbar);
     this.sb_media_controler_seekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
@@ -481,85 +476,10 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
       }
     });
 
-    // this.gestureDetector = new GestureDetector(new SimpleOnGestureListener() {
-    // @Override
-    // public boolean onDoubleTap(MotionEvent e) {
-    // if (isFullScreen) {
-    // setVideoScale(SCREEN_DEFAULT);// 设置视频显示尺寸
-    // } else {
-    // setVideoScale(SCREEN_FULL);// 设置视频显示尺寸
-    // }
-    // isFullScreen = !isFullScreen;
-    // if (isControllerShow) {
-    // showController();// 显示控制器
-    // }
-    // return true;
-    // }
-    //
-    // @Override
-    // public void onLongPress(MotionEvent e) {// 长按屏幕
-    // if (isPaused) {
-    // videoView.start();
-    // ibtn_media_controler_play_pause.setBackgroundResource(R.drawable.common_player_pause);
-    // cancelDelayHide();// 取消隐藏延迟
-    // hideControllerDelay();// 延迟隐藏控制器
-    // } else {
-    // videoView.pause();
-    // ibtn_media_controler_play_pause.setBackgroundResource(R.drawable.common_player_play);
-    // cancelDelayHide();// 延迟隐藏控制器
-    // showController();// 延迟隐藏控制器
-    // }
-    // isPaused = !isPaused;
-    // // super.onLongPress(e);
-    // }
-    //
-    // @Override
-    // public boolean onSingleTapConfirmed(MotionEvent e) {// 轻击屏幕
-    // if (!isControllerShow) {// 是否显示控制器
-    // showController();// 显示控制器
-    // hideControllerDelay();// 显示控制器
-    // } else {
-    // cancelDelayHide();// 取消隐藏延迟
-    // hideController();// 取消隐藏延迟
-    // }
-    // // return super.onSingleTapConfirmed(e);
-    // return true;
-    // }
-    // });
-    controlRectButtom = new Rect(0, screenHeight / 3 * 2, screenWidth, screenHeight);
-    controlRectRight = new Rect(screenWidth / 3 * 2, 0, screenWidth, screenHeight);
-    // videoView.setOnHoverListener(new OnHoverListener() {
-    // @Override
-    // public boolean onHover(View v, MotionEvent event) {
-    // switch (event.getAction()) {
-    // case MotionEvent.ACTION_HOVER_MOVE:
-    // if (!isControllerShow
-    // && (controlRectButtom.contains((int) event.getRawX(), (int) event.getRawY()) ||
-    // controlRectRight
-    // .contains((int) event.getRawX(), (int) event.getRawY()))) {// 是否显示控制器
-    // showController();// 显示控制器
-    // hideControllerDelay();// 延迟隐藏
-    // }
-    // break;
-    // }
-    // return true;
-    // }
-    // });
-    // videoView.setOnTouchListener(new OnTouchListener() {
-    //
-    // @Override
-    // public boolean onTouch(View v, MotionEvent event) {
-    // if (!isControllerShow) {// 是否显示控制器
-    // showController();// 显示控制器
-    // hideControllerDelay();// 延迟隐藏
-    // }
-    // return true;
-    // }
-    // });
-
     try {
-      jsonObject = (JsonObject) getIntent().getExtras().getSerializable("msg");
-      String vidoePath = jsonObject.getString("path");
+      //      jsonObject = (JsonObject) getIntent().getExtras().getSerializable("msg");
+      //      String vidoePath = jsonObject.getString("path");
+      String vidoePath = "/mnt/sdcard/1.mp4";
       String videoName =
           vidoePath.substring(vidoePath.lastIndexOf("/") + 1, vidoePath.lastIndexOf("."));
       uri = Uri.parse("file://" + vidoePath);
@@ -576,7 +496,7 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
   @Override
   public boolean onKeyDown(int keyCode, KeyEvent event) {
     if (keyCode == KeyEvent.KEYCODE_BACK) {
-      // TODO:
+      finish();
     }
     return super.onKeyDown(keyCode, event);
   }
@@ -641,40 +561,6 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
     return true;
   }
 
-  // @Override
-  // public boolean onTouchEvent(MotionEvent event) {// 实现该方法来处理触屏事件
-  // boolean result = gestureDetector.onTouchEvent(event);
-  //
-  // if (!result) {
-  // if (event.getAction() == MotionEvent.ACTION_UP) {
-  // }
-  // result = super.onTouchEvent(event);
-  // }
-  // return result;
-  // }
-
-  @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    if (requestCode == 0 && resultCode == Activity.RESULT_OK) {
-      videoView.stopPlayback();// 停止视频播放
-      int result = data.getIntExtra("CHOOSE", -1);
-      if (result != -1) {
-        isOnline = false;
-        isChangedVideo = true;
-      } else {
-        String url = data.getStringExtra("CHOOSE_URL");
-        if (url != null) {
-          videoView.setVideoPath(url);// 设置视频文件路径
-          isOnline = true;
-          isChangedVideo = true;
-        }
-      }
-
-      return;
-    }
-    super.onActivityResult(requestCode, resultCode, data);
-  }
-
   @Override
   protected void onDestroy() {
     if (controlerWindow.isShowing()) {
@@ -716,10 +602,6 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
   @Override
   protected void onPause() {
     super.onPause();
-    // playedTime = videoView.getCurrentPosition();
-    // if (videoView.isPlaying()) {
-    // videoView.pause();
-    // }
     // Always unregister when an handler no longer should be on the bus.
     this.unregisterReceiver(soundBroadCastReceiver);
     controlRegistration.unregister();
@@ -728,10 +610,8 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
   @Override
   protected void onResume() {// 恢复挂起的播放器
     super.onResume();
-
     controlRegistration =
         bus.subscribeLocal(Constant.ADDR_PLAYER, new MessageHandler<JsonObject>() {
-
           @Override
           public void handle(com.goodow.realtime.channel.Message<JsonObject> message) {
             JsonObject msg = message.body();
@@ -869,7 +749,6 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
   private void hideController() {// 隐藏控制器
     if (controlerWindow.isShowing()) {
       controlerWindow.update(0, 0, screenWidth, 0);
-      // titleWindow.update(0, 0, screenWidth, 0);
       titleWindow.dismiss();
       if (!isDrawing) {
         toolWindow.dismiss();
@@ -912,7 +791,7 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
     float mHeight = screenHeight;
     float widthScale = mWidth / videoWidth;
     float heightScale = mHeight / videoHeight;
-    float scale = 0;
+    float scale;
     switch (fit) {
       case 0:
         scale = Math.min(widthScale, heightScale);
@@ -965,5 +844,12 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
       }
     }
     isControllerShow = true;
+  }
+
+  private void subscribe() {
+    if (!registried) {
+      registried = true;
+      registry.subscribe();
+    }
   }
 }

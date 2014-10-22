@@ -268,14 +268,6 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
     return 0;
   }
 
-  // public void setMediaController(MediaController controller) {//设置媒体控制器
-  // if (mMediaController != null) {
-  // mMediaController.hide();
-  // }
-  // mMediaController = controller;
-  // attachMediaController();//附加媒体控制器
-  // }
-
   @Override
   public int getBufferPercentage() {// 获得缓冲区的百分比
     if (mMediaPlayer != null) {

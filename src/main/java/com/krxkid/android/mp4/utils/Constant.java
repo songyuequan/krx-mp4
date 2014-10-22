@@ -1,4 +1,4 @@
-package com.krxkid.android.mp4;
+package com.krxkid.android.mp4.utils;
 
 /**
  * Description: Constant
