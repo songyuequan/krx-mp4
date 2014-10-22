@@ -1,7 +1,29 @@
 <resources>
 
-    <!-- Default screen margins, per the Android Design guidelines. -->
-    <dimen name="activity_horizontal_margin">16dp</dimen>
-    <dimen name="activity_vertical_margin">16dp</dimen>
+  <!-- Default screen margins, per the Android Design guidelines. -->
+  <dimen name="activity_horizontal_margin">16dp</dimen>
+  <dimen name="activity_vertical_margin">16dp</dimen>
+
+  <dimen name="video_back_marginLeft">26dp</dimen>
+  <dimen name="video_back_marginTop">48dp</dimen>\
+
+  <!-- VideoActivity视频播放器 720p -->
+  <dimen name="video_back_marginLeft">26dp</dimen><!-- 视频播放器返回键左边距 -->
+  <dimen name="video_back_marginTop">48dp</dimen><!-- 视频播放器返回键上边距 -->
+  <dimen name="video_play_width">31dp</dimen><!-- 播放按钮宽度 -->
+  <dimen name="video_play_height">34dp</dimen><!-- 播放按钮高度 -->
+  <dimen name="video_replay_width">40dp</dimen><!-- 重播按钮宽度 -->
+  <dimen name="video_replay_height">33dp</dimen><!-- 重播按钮高度 -->
+  <dimen name="video_sound_width">44dp</dimen><!-- 音量按钮宽度 -->
+  <dimen name="video_sound_height">34dp</dimen><!-- 音量按钮高度 -->
+  <dimen name="video_textSize">22px</dimen><!-- 进度字体大小 -->
+  <dimen name="video_thumb_width">32dp</dimen><!-- 进度条滑块宽度 -->
+  <dimen name="video_thumb_height">32dp</dimen><!-- 进度条滑块高度 -->
+  <dimen name="video_seekbar_height">15dp</dimen><!-- 进度条高度 -->
+  <dimen name="video_thumb_padding">0dp</dimen><!-- 滑块左右边距 -->
+  <dimen name="video_title_height">35dp</dimen><!-- 标题栏高度 -->
+  <dimen name="video_toobar_item_width">73dp</dimen><!-- 工具栏条目宽度 -->
+  <dimen name="video_toobar_item_height">69dp</dimen><!-- 工具栏条目高度 -->
+  <dimen name="video_toobar_item_margin">30dp</dimen><!-- 工具栏条目之间的间距 -->
 
 </resources>

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">drive-android-svg</string>
+    <string name="app_name">krx-mp4</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
+  <string name="video_file_no_exist">文件不存在</string>
 
 </resources>

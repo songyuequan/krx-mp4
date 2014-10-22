@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+  <VideoView
+      android:layout_centerInParent="true"
+      android:id="@+id/krx_mp4_video_view"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent" />
+  <ImageView
+      android:clickable="true"
+      android:layout_marginLeft="@dimen/video_back_marginLeft"
+      android:layout_marginTop="@dimen/video_back_marginTop"
+      android:id="@+id/iv_act_favour_back"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:src="@drawable/common_selector_back" />
+
+</merge>
