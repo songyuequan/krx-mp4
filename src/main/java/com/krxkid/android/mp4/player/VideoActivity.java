@@ -155,10 +155,10 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
           hideController();// 隐藏控制器
           break;
         case INIT_PASUE:
-          int videoWidth = videoView.getVideoWidth();
-          int videoHeight = videoView.getVideoHeight();
+          int videoWidth = videoView.getWidth();
+          int videoHeight = videoView.getHeight();
           videoView.layout(0, 0, videoWidth, videoHeight);
-          setFit(0);
+          setFit(3);
           if (jsonObject != null)
             handleMsg(jsonObject);
           break;
@@ -783,31 +783,38 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
     }
   }
 
-  // 视频适应屏幕
+  // 视频适应屏幕 0:一边填满 1:适应宽高 2:适应高 3:原始宽高 4:适应整个屏幕
   private void setFit(int fit) {
-    float videoWidth = videoView.getWidth();
-    float videoHeight = videoView.getHeight();
+    float videoWidth = videoView.getVideoWidth();
+    float videoHeight = videoView.getVideoHeight();
     float mWidth = screenWidth;
     float mHeight = screenHeight;
     float widthScale = mWidth / videoWidth;
     float heightScale = mHeight / videoHeight;
-    float scale;
+    float scale =0;
     switch (fit) {
-      case 0:
+      case 0: // 一边填满
         scale = Math.min(widthScale, heightScale);
+        videoView.setVideoScale((int) (videoWidth * scale), (int) (videoHeight * scale));
         break;
-      case 1:
+      case 1: // 适应宽
         scale = widthScale;
+        videoView.setVideoScale((int) (videoWidth * scale), (int) (videoHeight * scale));
         break;
-      case 2:
+      case 2: // 适应高
         scale = heightScale;
+        videoView.setVideoScale((int) (videoWidth * scale), (int) (videoHeight * scale));
         break;
-      default:
+      case 3: // 原始宽高
         scale = 1;
+        videoView.setVideoScale((int) (videoWidth * scale), (int) (videoHeight * scale));
+        break;
+      case 4: //适应整个屏幕
+        videoView.layout(0,0,screenWidth,screenHeight);
         break;
     }
     currentScale *= scale;
-    videoView.setVideoScale((int) (videoWidth * scale), (int) (videoHeight * scale));
+
   }
 
   // 视频缩放

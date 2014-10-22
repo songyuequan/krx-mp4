@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.*;
 import android.widget.MediaController;
 import android.widget.MediaController.MediaPlayerControl;
+import com.krxkid.android.mp4.utils.ScreenTools;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -46,6 +47,12 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
   private boolean mStartWhenPrepared;// 开始什么时候缓冲好
 
   private int mSeekWhenPrepared;// 指定进度什么时候缓冲好
+
+  /**
+   * 屏幕的宽高
+   */
+  private int screenWidth;
+  private int screenHeight;
 
   // 视频显示尺寸大小改变 监听事件
   MediaPlayer.OnVideoSizeChangedListener mSizeChangedListener =
@@ -237,8 +244,8 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
   }
 
   /**
-   * @param context 视图运行的应用程序上下文，通过它可以访问当前主题、资源等等。
-   * @param attrs 用于视图的 XML 标签属性集合
+   * @param context  视图运行的应用程序上下文，通过它可以访问当前主题、资源等等。
+   * @param attrs    用于视图的 XML 标签属性集合
    * @param defStyle 应用到视图的默认风格。如果为 0 则不应用（包括当前主题中的）风格。 该值可以是当前主题中的属性资源，或者是明确的风格资源 ID。
    */
   public VideoView(Context context, AttributeSet attrs, int defStyle) {
@@ -376,7 +383,7 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
 
   /**
    * 设置自定义尺寸 改变的事件监听
-   * 
+   *
    * @param l 视频显示尺寸 改变的事件监听
    */
   public void setMySizeChangeLinstener(MySizeChangeLinstener l) {
@@ -386,7 +393,7 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
   /**
    * Register a callback to be invoked when the end of a media file has been reached during
    * playback.
-   * 
+   *
    * @param l The callback that will be run
    */
   public void setOnCompletionListener(OnCompletionListener l)// 注册在媒体文件播放完毕时调用的回调函数
@@ -397,18 +404,18 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
   /**
    * Register a callback to be invoked when an error occurs during playback or setup. If no listener
    * is specified, or if the listener returned false, VideoView will inform the user of any errors.
-   * 
+   *
    * @param l The callback that will be run
    */
   public void setOnErrorListener(OnErrorListener l)// 注册在设置或播放过程中发生错误时调用的回调函数。如果未指定回调函数，
-                                                   // 或回调函数返回假，VideoView 会通知用户发生了错误。
+  // 或回调函数返回假，VideoView 会通知用户发生了错误。
   {
     mOnErrorListener = l;
   }
 
   /**
    * Register a callback to be invoked when the media file is loaded and ready to go.
-   * 
+   *
    * @param l The callback that will be run
    */
   public void setOnPreparedListener(MediaPlayer.OnPreparedListener l)// 注册在媒体文件加载完毕，可以播放时调用的回调函数
@@ -422,18 +429,25 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
 
   /**
    * 设置视频宽、高
-   * 
+   *
    * @param width
    * @param height
    */
   public void setVideoScale(int width, int height) {
-    int videoWidth = this.getWidth();
-    int videoHeight = this.getHeight();
-    int endLeft = this.getLeft() + (videoWidth - width) / 2;
-    int endTop = this.getTop() + (videoHeight - height) / 2;
-    int endRight = this.getRight() - (videoWidth - width) / 2;
-    int endButtom = this.getBottom() - (videoHeight - height) / 2;
+    //    int videoWidth = this.getWidth();
+    //    int videoHeight = this.getHeight();
+    //    int endLeft = this.getLeft() + (videoWidth - width) / 2;
+    //    int endTop = this.getTop() + (videoHeight - height) / 2;
+    //    int endRight = this.getRight() - (videoWidth - width) / 2;
+    //    int endButtom = this.getBottom() - (videoHeight - height) / 2;
+    //    this.layout(endLeft, endTop, endRight, endButtom);
+
+    int endLeft = (screenWidth - width) / 2;
+    int endTop = (screenHeight - height) / 2;
+    int endRight = screenWidth - endLeft;
+    int endButtom = screenHeight - endTop;
     this.layout(endLeft, endTop, endRight, endButtom);
+//    requestLayout();  //刷新onMesure
     // this.layout(0, 0, width, height);
     // LayoutParams lp = getLayoutParams();
     // lp.height = height;
@@ -451,7 +465,7 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
     mSeekWhenPrepared = 0;// 指定进度什么时候缓冲好
     openVideo();// 打开视频
     requestLayout();// 当view确定自身已经不再适合现有的区域时，该view本身调用这个方法要求parent view重新调用他的onMeasure
-                    // onLayout来对重新设置自己位置。
+    // onLayout来对重新设置自己位置。
     invalidate();// View本身调用迫使view重画
   }
 
@@ -481,6 +495,8 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
     // Log.i("@@@@", "onMeasure");
     int width = getDefaultSize(mVideoWidth, widthMeasureSpec);
     int height = getDefaultSize(mVideoHeight, heightMeasureSpec);
+    //    int width = getVideoWidth();
+    //    int height = getVideoHeight();  // 第一次进入时候,无法拿到width,height,默认情况下,只能是适应屏幕宽高
     /*
      * if (mVideoWidth > 0 && mVideoHeight > 0) { if ( mVideoWidth * height > width * mVideoHeight )
      * { //Log.i("@@@", "image too tall, correcting"); height = width * mVideoHeight / mVideoWidth;
@@ -507,10 +523,13 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
     mVideoWidth = 0;
     mVideoHeight = 0;
     getHolder().addCallback(mSHCallback);// 对surface对象的状态进行监听
-    getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);// 设置surfaceview不维护自己的缓冲区，而是等待屏幕的渲染引擎将内容推送到用户面前
+    getHolder().setType(
+        SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);// 设置surfaceview不维护自己的缓冲区，而是等待屏幕的渲染引擎将内容推送到用户面前
     setFocusable(true);// 可获得焦点
     setFocusableInTouchMode(true);// 在触摸模式可获得焦点
     requestFocus();
+    screenHeight = ScreenTools.getScreenHeight(mContext);
+    screenWidth = ScreenTools.getScreenWidth(mContext);
   }
 
   private void openVideo() {// 打开视频
@@ -543,7 +562,7 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
       new Thread(new Runnable() {
         @Override
         public void run() {
-          try{
+          try {
             // mMediaPlayer.setDataSource(mContext, mUri);
             String scheme = mUri.getScheme();
             if (scheme == null || scheme.equals("file")) {
@@ -560,7 +579,7 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
             mMediaPlayer.setScreenOnWhilePlaying(true);
             mMediaPlayer.prepareAsync();// 为了不阻塞主线程而异步准备
             attachMediaController();// 附加媒体控制器
-          }catch (IOException ex){
+          } catch (IOException ex) {
             Log.w("mp4", "Unable to open content: " + mUri, ex);
             return;
           }
