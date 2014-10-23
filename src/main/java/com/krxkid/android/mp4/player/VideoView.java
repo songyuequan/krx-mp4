@@ -381,6 +381,8 @@ class VideoView extends SurfaceView implements MediaPlayerControl {
     }
   }
 
+
+
   /**
    * 设置自定义尺寸 改变的事件监听
    *

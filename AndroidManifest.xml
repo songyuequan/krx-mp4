@@ -21,15 +21,13 @@
         android:name="roboguice.modules"
         android:value="com.krxkid.android.mp4.AndroidModule" />
 
-    <activity
-        android:name=".MainActivity"
-        android:label="@string/app_name">
+    <activity android:name=".player.VideoActivity">
       <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="video/mp4" />
       </intent-filter>
     </activity>
-    <activity android:name=".player.VideoActivity" />
   </application>
 
 </manifest>

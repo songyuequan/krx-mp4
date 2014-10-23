@@ -3,6 +3,7 @@ package com.krxkid.android.mp4.player;
 import android.app.AlertDialog;
 import android.content.*;
 import android.content.res.Configuration;
+import android.database.*;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.AudioManager;
@@ -16,11 +17,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.MessageQueue.IdleHandler;
+import android.provider.MediaStore;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.*;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.widget.*;
+import android.widget.Button;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import com.goodow.realtime.channel.Bus;
 import com.goodow.realtime.channel.MessageHandler;
@@ -31,9 +35,13 @@ import com.google.inject.Inject;
 import com.krxkid.android.mp4.R;
 import com.krxkid.android.mp4.utils.Constant;
 import com.krxkid.android.mp4.utils.Registry;
+import com.sun.org.apache.bcel.internal.generic.IF_ACMPEQ;
 import roboguice.activity.RoboActivity;
 import roboguice.inject.ContentView;
 import roboguice.inject.InjectView;
+
+import java.awt.*;
+import java.io.File;
 
 /**
  * @author www.dingpengwei@gmail.com
@@ -46,6 +54,7 @@ import roboguice.inject.InjectView;
  */
 @ContentView(R.layout.video_activity_media)
 public class VideoActivity extends RoboActivity implements OnTouchListener {
+  private static final String TAG = VideoActivity.class.getSimpleName();
   private boolean registried = false;
   @Inject
   private Registry registry;
@@ -135,6 +144,7 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
         case PROGRESS_CHANGED:// 进度改变
           int i = videoView.getCurrentPosition();
           sb_media_controler_seekbar.setProgress(i);
+          Log.i(TAG, "videoView  UI getCurrentPosition: " + i);
           if (isOnline) {
             int j = videoView.getBufferPercentage();
             sb_media_controler_seekbar.setSecondaryProgress(j * sb_media_controler_seekbar.getMax()
@@ -149,7 +159,7 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
           minute %= 60;
           tv_media_controler_has_played.setText(String.format("%02d:%02d:%02d", hour, minute,
               second));
-          sendEmptyMessageDelayed(PROGRESS_CHANGED, 100);
+          sendEmptyMessageDelayed(PROGRESS_CHANGED, 500);
           break;
         case HIDE_CONTROLER:// 隐藏控制器
           hideController();// 隐藏控制器
@@ -158,12 +168,12 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
           int videoWidth = videoView.getWidth();
           int videoHeight = videoView.getHeight();
           videoView.layout(0, 0, videoWidth, videoHeight);
-          setFit(3);
+          setFit(0); // 0:一边填满 1:适应宽高 2:适应高 3:原始宽高 4:适应整个屏幕
           if (jsonObject != null)
             handleMsg(jsonObject);
           break;
       }
-      super.handleMessage(msg);
+      //      super.handleMessage(msg);
     }
   };
 
@@ -383,6 +393,7 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
       public void onCompletion(MediaPlayer arg0) {
         isOnline = false;
         bus.sendLocal(Constant.ADDR_PLAYER, Json.createObject().set("play", 3), null);
+        videoView.start();
         ibtn_media_controler_play_pause.setBackgroundResource(R.drawable.common_player_pause);
         // videoView.stopPlayback();
         // VideoActivity.this.finish();
@@ -455,13 +466,12 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
       @Override
       public void onProgressChanged(SeekBar seekbar, int progress, boolean fromUser) {
         if (fromUser) {
-          // videoView.seekTo(progress);// 设置播放位置
-          JsonObject msg = Json.createObject();
-          msg.set("progress", (double) progress / sb_media_controler_seekbar.getMax());
-          bus.sendLocal(Constant.ADDR_PLAYER, msg, null);
-          if (!isOnline) {
-
-          }
+          videoView.seekTo(progress);// 设置播放位置
+          //          JsonObject msg = Json.createObject();
+          //          msg.set("progress", (double) progress / sb_media_controler_seekbar.getMax());
+          //          bus.sendLocal(Constant.ADDR_PLAYER, msg, null);
+          Log.i(TAG, "SeekBar User progress: " + progress);
+          videoView.start();
         }
       }
 
@@ -476,20 +486,73 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
       }
     });
 
-    try {
-      //      jsonObject = (JsonObject) getIntent().getExtras().getSerializable("msg");
-      //      String vidoePath = jsonObject.getString("path");
-      String vidoePath = "/mnt/sdcard/1.mp4";
-      String videoName =
-          vidoePath.substring(vidoePath.lastIndexOf("/") + 1, vidoePath.lastIndexOf("."));
-      uri = Uri.parse("file://" + vidoePath);
-      if (uri != null) {
-        this.videoView.setVideoURI(uri);// 设置视频文件URI
-        this.isOnline = true;
-        tv_media_title_name.setText(videoName);
+    //    try {
+    //      //      jsonObject = (JsonObject) getIntent().getExtras().getSerializable("msg");
+    //      //      String vidoePath = jsonObject.getString("path");
+    //      String vidoePath = "/mnt/sdcard/2.mp4";
+    //      String videoName =
+    //          vidoePath.substring(vidoePath.lastIndexOf("/") + 1, vidoePath.lastIndexOf("."));
+    //      uri = Uri.parse("file://" + vidoePath);
+    //      if (uri != null) {
+    //        this.videoView.setVideoURI(uri);// 设置视频文件URI
+    ////        this.isOnline = true;
+    //        tv_media_title_name.setText(videoName);
+    //      }
+    //    } catch (Exception e) {
+    //      Toast.makeText(this, getString(R.string.video_file_no_exist), Toast.LENGTH_SHORT).show();
+    //    }
+    getPlayerIntent(getIntent());
+  }
+
+  private void getPlayerIntent(Intent intent) {
+    if (intent != null) {
+      Bundle extras = intent.getExtras();
+      if (extras != null && extras.containsKey("msg")) {
+        //得到路径
+        JsonObject msg = (JsonObject) intent.getExtras().getSerializable("msg");
+        if (msg != null && msg.has("path") && msg.has("name")) {
+          String path = msg.getString("path"); //文件路径
+          String name = msg.getString("name"); //文件名字
+          String id = msg.getString("id"); //文件id
+          File mFile = new File(path);
+          if (mFile.exists()) {
+            uri = Uri.parse("file://" + path);
+            this.videoView.setVideoURI(uri);// 设置视频文件URI
+            this.isOnline = false;
+            tv_media_title_name.setText(name);
+            // 处理控制
+            handleMsg(msg);
+          } else {
+            Toast.makeText(this, R.string.video_file_no_exist, Toast.LENGTH_LONG).show();
+          }
+        }
+      } else {
+        String path = null;
+        String intentData = intent.getDataString();
+        if (intentData.startsWith("file://")) {
+          path = intentData;
+        } else if (intentData.startsWith("content://")) {
+          Uri mUri = Uri.parse(intentData);
+          String[] proj = {MediaStore.Images.Media.DATA};
+          android.database.Cursor cursor = this.managedQuery(mUri, proj, null, null, null);
+          int actual_image_column_index =
+              cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+          cursor.moveToFirst();
+          path = cursor.getString(actual_image_column_index);
+        }
+
+        //是否存在uri
+        if (path != null) {
+          uri = Uri.parse("file://" + path);
+          this.videoView.setVideoURI(uri);// 设置视频文件URI
+          this.isOnline = false;
+          String videoName =
+              path.substring(path.lastIndexOf("/") + 1, path.lastIndexOf("."));
+          tv_media_title_name.setText(videoName);
+        } else {
+          this.finish();
+        }
       }
-    } catch (Exception e) {
-      Toast.makeText(this, getString(R.string.video_file_no_exist), Toast.LENGTH_SHORT).show();
     }
   }
 
@@ -579,22 +642,63 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
 
   @Override
   protected void onNewIntent(Intent intent) {
-    jsonObject = (JsonObject) intent.getExtras().getSerializable("msg");
-    setIntent(intent);
-    String vidoePath = jsonObject.getString("path");
-    String videoName =
-        vidoePath.substring(vidoePath.lastIndexOf("/") + 1, vidoePath.lastIndexOf("."));
-    Uri uri = Uri.parse("file://" + vidoePath);
-    if (uri != null) {
-      if (!uri.equals(this.uri)) {
-        isChangedVideo = true;
-        this.uri = uri;
-        this.videoView.stopPlayback();// 停止视频播放
-        this.videoView.setVideoURI(uri);// 设置视频文件URI
-        this.isOnline = true;
-        tv_media_title_name.setText(videoName);
+    //TODO:
+    //    jsonObject = (JsonObject) intent.getExtras().getSerializable("msg");
+    //    setIntent(intent);
+    //    String vidoePath = jsonObject.getString("path");
+    //    String videoName =
+    //        vidoePath.substring(vidoePath.lastIndexOf("/") + 1, vidoePath.lastIndexOf("."));
+    //    Uri uri = Uri.parse("file://" + vidoePath);
+    //    if (uri != null) {
+    //      if (!uri.equals(this.uri)) {
+    //        isChangedVideo = true;
+    //        this.uri = uri;
+    //        this.videoView.stopPlayback();// 停止视频播放
+    //        this.videoView.setVideoURI(uri);// 设置视频文件URI
+    //        this.isOnline = true;
+    //        tv_media_title_name.setText(videoName);
+    //      } else {
+    //        handleMsg(jsonObject);// uri相同直接控制信息
+    //      }
+    //    }
+    if (intent != null) {
+      Bundle extras = intent.getExtras();
+      if (extras != null && extras.containsKey("msg")) {
+        //得到路径
+        JsonObject msg = (JsonObject) intent.getExtras().getSerializable("msg");
+        if (msg != null && msg.has("path") && msg.has("name")) {
+          String path = msg.getString("path"); //文件路径
+          String name = msg.getString("name"); //文件名字
+          String id = msg.getString("id"); //文件id
+          File mFile = new File(path);
+          if (mFile.exists()) {
+            Uri uri = Uri.parse("file://" + path);
+            // 不是当前文件
+            if (!uri.equals(this.uri)) {
+              this.uri = uri;
+              this.videoView.setVideoURI(uri);// 设置视频文件URI
+              this.isOnline = false;
+              tv_media_title_name.setText(name);
+            }
+            // 处理控制
+            handleMsg(msg);
+          } else {
+            Toast.makeText(this, R.string.video_file_no_exist, Toast.LENGTH_LONG).show();
+          }
+        }
       } else {
-        handleMsg(jsonObject);// uri相同直接控制信息
+        String path = intent.getDataString();
+        //是否存在uri
+        if (path != null) {
+          uri = Uri.parse("file://" + path);
+          this.videoView.setVideoURI(uri);// 设置视频文件URI
+          this.isOnline = false;
+          String videoName =
+              path.substring(path.lastIndexOf("/") + 1, path.lastIndexOf("."));
+          tv_media_title_name.setText(videoName);
+        } else {
+          this.finish();
+        }
       }
     }
   }
@@ -704,6 +808,8 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
     if (msg.has("progress")) {
       double progress = msg.getNumber("progress");
       videoView.seekTo((int) (videoView.getDuration() * progress));// 设置播放位置
+      Log.i(TAG, "VideoView: seekTo: " + (int) (videoView.getDuration() * progress));
+      Log.i(TAG, "videoView   getCurrentPosition: " + videoView.getCurrentPosition());
     }
 
     if (msg.has("play")) {
@@ -731,8 +837,9 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
           }
           break;
         case 3:
+          videoView.pause();
           // 重播
-          videoView.seekTo(0);
+          videoView.seekTo(0); // 设置为0每次播放都是从10240开始,尝试改为-10000
           if (!videoView.isPlaying()) {
             videoView.start();
             ibtn_media_controler_play_pause.setBackgroundResource(R.drawable.common_player_pause);
@@ -791,7 +898,7 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
     float mHeight = screenHeight;
     float widthScale = mWidth / videoWidth;
     float heightScale = mHeight / videoHeight;
-    float scale =0;
+    float scale = 0;
     switch (fit) {
       case 0: // 一边填满
         scale = Math.min(widthScale, heightScale);
@@ -810,7 +917,7 @@ public class VideoActivity extends RoboActivity implements OnTouchListener {
         videoView.setVideoScale((int) (videoWidth * scale), (int) (videoHeight * scale));
         break;
       case 4: //适应整个屏幕
-        videoView.layout(0,0,screenWidth,screenHeight);
+        videoView.layout(0, 0, screenWidth, screenHeight);
         break;
     }
     currentScale *= scale;
